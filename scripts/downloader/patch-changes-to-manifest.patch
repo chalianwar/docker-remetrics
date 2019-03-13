@@ -1,0 +1,91 @@
+From 7853059a3e60f05048685941b7eb13dc8da16a69 Mon Sep 17 00:00:00 2001
+From: Nannan Zhao <nannanzhao@nannans-mbp.almaden.ibm.com>
+Date: Wed, 28 Jun 2017 13:15:51 -0700
+Subject: [PATCH 1/2] fixing undefined6
+
+---
+ registry/manifest.go | 28 ++++++++++++++--------------
+ 1 file changed, 14 insertions(+), 14 deletions(-)
+
+diff --git a/registry/manifest.go b/registry/manifest.go
+index 6f463a7..4f8daba 100644
+--- a/registry/manifest.go
++++ b/registry/manifest.go
+@@ -40,7 +40,7 @@ func (registry *Registry) Manifest(repository, reference string) (*manifestV1.Si
+ 	return signedManifest, nil
+ }
+ 
+-func (registry *Registry) ManifestV2(repository, reference string) (*manifestV2.DeserializedManifest, error) {
++func (registry *Registry) ManifestV2(repository, reference string) (*http.Response, error) {
+ 	url := registry.url("/v2/%s/manifests/%s", repository, reference)
+ 	registry.Logf("registry.manifest.get url=%s repository=%s reference=%s", url, repository, reference)
+ 
+@@ -54,19 +54,19 @@ func (registry *Registry) ManifestV2(repository, reference string) (*manifestV2.
+ 	if err != nil {
+ 		return nil, err
+ 	}
+-
+-	defer resp.Body.Close()
+-	body, err := ioutil.ReadAll(resp.Body)
+-	if err != nil {
+-		return nil, err
+-	}
+-
+-	deserialized := &manifestV2.DeserializedManifest{}
+-	err = deserialized.UnmarshalJSON(body)
+-	if err != nil {
+-		return nil, err
+-	}
+-	return deserialized, nil
++	return resp, err
++	//defer resp.Body.Close()
++	//body, err := ioutil.ReadAll(resp.Body)
++	//if err != nil {
++	//	return nil, err
++	//}
++	//
++	//deserialized := &manifestV2.DeserializedManifest{}
++	//err = deserialized.UnmarshalJSON(body)
++	//if err != nil {
++	//	return nil, err
++	//}
++	//return deserialized, nil
+ }
+ 
+ func (registry *Registry) ManifestDigest(repository, reference string) (digest.Digest, error) {
+-- 
+1.8.3.1
+
+
+From 189f85a9f7503ff63dad8ff0c7d6f9164e170829 Mon Sep 17 00:00:00 2001
+From: Nannan Zhao <nannanzhao@nannans-mbp.almaden.ibm.com>
+Date: Wed, 28 Jun 2017 13:59:02 -0700
+Subject: [PATCH 2/2] fixing undefined10
+
+---
+ registry/manifest.go | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/registry/manifest.go b/registry/manifest.go
+index 4f8daba..7b13a9b 100644
+--- a/registry/manifest.go
++++ b/registry/manifest.go
+@@ -49,7 +49,14 @@ func (registry *Registry) ManifestV2(repository, reference string) (*http.Respon
+ 		return nil, err
+ 	}
+ 
+-	req.Header.Set("Accept", manifestV2.MediaTypeManifest)
++	//for _, t := range distribution.ManifestMediaTypes() {
++	//	req.Header.Add("Accept", t)
++	//}
++
++	req.Header.Add("Accept", manifestV2.MediaTypeManifest)
++	req.Header.Add("Accept", manifestV1.MediaTypeManifest) //application/vnd.docker.distribution.manifest.list.v2+json
++	req.Header.Add("Accept", "application/vnd.docker.distribution.manifest.list.v2+json")
++
+ 	resp, err := registry.Client.Do(req)
+ 	if err != nil {
+ 		return nil, err
+-- 
+1.8.3.1
+
